@@ -96,6 +96,9 @@ func (r *Rpm) Create(folder string) (string, error) {
 	}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
+	res,err := ioutil.ReadFile(specFile.Name())
+	fmt.Println(err)
+	fmt.Println(string(res))
 	cmd := exec.Command("rpmbuild", "-bb", specFile.Name())
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

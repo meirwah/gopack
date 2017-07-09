@@ -1,7 +1,7 @@
 package deb
 
 import (
-	"archive/tar"
+	"github.com/nmiyake/paxtar"
 	"compress/gzip"
 	"crypto/md5"
 	"fmt"
@@ -21,7 +21,7 @@ import (
 type canonical struct {
 	file         *os.File
 	zip          *gzip.Writer
-	tarWriter    *tar.Writer
+	tarWriter    *paxtar.Writer
 	md5s         bytes.Buffer
 	emptyFolders map[string]bool
 }
@@ -34,18 +34,18 @@ func newCanonical() (*canonical, error) {
 		return nil, err
 	}
 	c.zip = gzip.NewWriter(c.file)
-	c.tarWriter = tar.NewWriter(c.zip)
+	c.tarWriter = paxtar.NewWriter(c.zip)
 	c.emptyFolders = make(map[string]bool)
 	return c, nil
 }
 
 func (c *canonical) AddBytes(data []byte, tarName string) error {
-	header := new(tar.Header)
+	header := new(paxtar.Header)
 	header.Name = tarName
 	header.Mode = 0664
 	header.Size = int64(len(data))
 	header.ModTime = time.Now()
-	header.Typeflag = tar.TypeReg
+	header.Typeflag = paxtar.TypeReg
 	err := c.tarWriter.WriteHeader(header)
 	if err != nil {
 		return err
@@ -67,12 +67,12 @@ func (c *canonical) AddBytes(data []byte, tarName string) error {
 }
 
 func (c *canonical) AddLink(name string, linkName string) error {
-	header := new(tar.Header)
+	header := new(paxtar.Header)
 	header.Name = name
 	header.Linkname = linkName
 	header.Mode = 0664
 	header.ModTime = time.Now()
-	header.Typeflag = tar.TypeSymlink
+	header.Typeflag = paxtar.TypeSymlink
 	return c.tarWriter.WriteHeader(header)
 }
 
@@ -81,11 +81,11 @@ func (c *canonical) AddEmptyFolder(name string) error {
 	if name == "" {
 		return fmt.Errorf("Cannot add empty name for empty folder")
 	}
-	header := new(tar.Header)
+	header := new(paxtar.Header)
 	header.Name = name
 	header.Mode = 0775
 	header.ModTime = time.Now()
-	header.Typeflag = tar.TypeDir
+	header.Typeflag = paxtar.TypeDir
 	return c.tarWriter.WriteHeader(header)
 }
 
@@ -105,7 +105,7 @@ func (c *canonical) AddFile(name string, tarName string) error {
 	if err != nil {
 		return err
 	}
-	header, err := tar.FileInfoHeader(fileInfo, "")
+	header, err := paxtar.FileInfoHeader(fileInfo, "")
 	if tarName != "" {
 		header.Name = tarName
 	}

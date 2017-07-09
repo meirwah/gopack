@@ -1,7 +1,7 @@
 package deb
 
 import (
-	"github.com/nmiyake/paxtar"
+	"archive/tar"
 	"compress/gzip"
 	"crypto/md5"
 	"fmt"
@@ -21,7 +21,7 @@ import (
 type canonical struct {
 	file         *os.File
 	zip          *gzip.Writer
-	tarWriter    *paxtar.Writer
+	tarWriter    *tar.Writer
 	md5s         bytes.Buffer
 	emptyFolders map[string]bool
 }
@@ -34,18 +34,18 @@ func newCanonical() (*canonical, error) {
 		return nil, err
 	}
 	c.zip = gzip.NewWriter(c.file)
-	c.tarWriter = paxtar.NewWriter(c.zip)
+	c.tarWriter = tar.NewWriter(c.zip)
 	c.emptyFolders = make(map[string]bool)
 	return c, nil
 }
 
 func (c *canonical) AddBytes(data []byte, tarName string) error {
-	header := new(paxtar.Header)
+	header := new(tar.Header)
 	header.Name = tarName
 	header.Mode = 0664
 	header.Size = int64(len(data))
 	header.ModTime = time.Now()
-	header.Typeflag = paxtar.TypeReg
+	header.Typeflag = tar.TypeReg
 	err := c.tarWriter.WriteHeader(header)
 	if err != nil {
 		return err
@@ -67,12 +67,12 @@ func (c *canonical) AddBytes(data []byte, tarName string) error {
 }
 
 func (c *canonical) AddLink(name string, linkName string) error {
-	header := new(paxtar.Header)
+	header := new(tar.Header)
 	header.Name = name
 	header.Linkname = linkName
 	header.Mode = 0664
 	header.ModTime = time.Now()
-	header.Typeflag = paxtar.TypeSymlink
+	header.Typeflag = tar.TypeSymlink
 	return c.tarWriter.WriteHeader(header)
 }
 
@@ -81,11 +81,11 @@ func (c *canonical) AddEmptyFolder(name string) error {
 	if name == "" {
 		return fmt.Errorf("Cannot add empty name for empty folder")
 	}
-	header := new(paxtar.Header)
+	header := new(tar.Header)
 	header.Name = name
 	header.Mode = 0775
 	header.ModTime = time.Now()
-	header.Typeflag = paxtar.TypeDir
+	header.Typeflag = tar.TypeDir
 	return c.tarWriter.WriteHeader(header)
 }
 
@@ -105,10 +105,13 @@ func (c *canonical) AddFile(name string, tarName string) error {
 	if err != nil {
 		return err
 	}
-	header, err := paxtar.FileInfoHeader(fileInfo, "")
+	header, err := tar.FileInfoHeader(fileInfo, "")
 	if tarName != "" {
 		header.Name = tarName
 	}
+	header.Gid = 0
+	header.Uid = 0
+
 	if err != nil {
 		return err
 	}

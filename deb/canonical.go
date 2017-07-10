@@ -1,7 +1,7 @@
 package deb
 
 import (
-	"archive/tar"
+	"github.com/meirwah/gopack/deb/tar"
 	"compress/gzip"
 	"crypto/md5"
 	"fmt"

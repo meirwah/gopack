@@ -174,8 +174,6 @@ func (tw *Writer) writeHeader(hdr *Header, allowPax bool) error {
 	var formatString = func(b []byte, s string, paxKeyword string) {
 		needsPaxHeader := paxKeyword != paxNone && len(s) > len(b) || !isASCII(s)
 		if needsPaxHeader {
-			fmt.Println("XXXXXX")
-			fmt.Println(s)
 			paxHeaders[paxKeyword] = s
 			return
 		}
@@ -229,10 +227,8 @@ func (tw *Writer) writeHeader(hdr *Header, allowPax bool) error {
 	// try to use a ustar header when only the name is too long
 	_, paxPathUsed := paxHeaders[paxPath]
 	if !tw.preferPax && len(paxHeaders) == 1 && paxPathUsed {
-		fmt.Println("zzzzz")
 		prefix, suffix, ok := splitUSTARPath(hdr.Name)
 		if ok {
-			fmt.Println("ok")
 			// Since we can encode in USTAR format, disable PAX header.
 			delete(paxHeaders, paxPath)
 
@@ -272,7 +268,6 @@ func (tw *Writer) writeHeader(hdr *Header, allowPax bool) error {
 	tw.pad = (blockSize - (tw.nb % blockSize)) % blockSize
 
 	_, tw.err = tw.w.Write(header[:])
-	//fmt.Println(string(header))
 	return tw.err
 }
 
